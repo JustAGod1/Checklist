@@ -8,7 +8,7 @@ object Printer {
 
   def pushSection(name: String): Unit = {
     printOffset()
-    println(name + ":")
+    println(name)
     stack.push(name)
   }
   def popSection(): Unit = {

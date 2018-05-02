@@ -35,7 +35,7 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
             Printer.print("\n")
           case e: VariableBlock =>
             val evaluatedTip = evaluateLine(e.tip.participants, globalVariables.toMap, globalFunctions.toList)
-            Printer.print(evaluatedTip + ": ")
+            Printer.print(s"$evaluatedTip (${e.varType}): ")
             val variable = getVariable(e.varType)
             evaluate(e.instructions.get, mutable.HashMap((e.name, variable)), new ListBuffer[ChecklistFunction])
           case f: ChecklistFunction =>
@@ -48,7 +48,7 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
               sys.error(s"Already defined variable $name")
             }
             val evaluatedTip = evaluateLine(tip.participants, globalVariables.toMap, globalFunctions.toList)
-            Printer.print(evaluatedTip + ": ")
+            Printer.print(s"$evaluatedTip ($varType): ")
             val variable = getVariable(varType)
             globalVariables += ((name, variable))
           case ReturnExpression(expression) =>
@@ -176,7 +176,7 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
             }
           case e: VariableBlock =>
             val evaluatedTip = evaluateLine(e.tip.participants, concatMaps(variables.toMap, globalVariables.toMap), concatLists(globalFunctions.toList, functions.toList))
-            Printer.print(evaluatedTip + ": ")
+            Printer.print(s"$evaluatedTip (${e.varType}): ")
             val variable = getVariable(e.varType)
             evaluate(e.instructions.get, mutable.HashMap((e.name, variable)), new ListBuffer[ChecklistFunction])
           case f: ChecklistFunction =>
@@ -189,7 +189,7 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
               sys.error(s"Already defined variable $name")
             }
             val evaluatedTip = evaluateLine(tip.participants, concatMaps(variables.toMap, globalVariables.toMap), concatLists(globalFunctions.toList, functions.toList))
-            Printer.print(evaluatedTip + ": ")
+            Printer.print(s"$evaluatedTip ($varType): ")
             val variable = getVariable(varType)
             variables += ((name, variable))
           case ReturnExpression(expression) =>
