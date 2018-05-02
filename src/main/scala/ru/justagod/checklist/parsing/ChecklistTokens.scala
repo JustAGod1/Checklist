@@ -120,5 +120,8 @@ trait ChecklistTokens extends Tokens {
   case class LessMore() extends Token {
     override def chars = "<>"
   }
+  case class Hash() extends Token {
+    override def chars = "#"
+  }
 
 }

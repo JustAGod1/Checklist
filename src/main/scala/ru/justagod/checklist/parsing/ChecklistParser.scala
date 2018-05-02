@@ -21,7 +21,7 @@ object ChecklistParser extends TokenParsers with ImplicitConversions with Packra
   }
 
 
-  lazy private val line = whileStatement | declaration | variableRequest | assignation | elseStatement | ifStatement | variableBlock | returnValue | function | outLine
+  lazy private val line = section | whileStatement | declaration | variableRequest | assignation | elseStatement | ifStatement | variableBlock | returnValue | function | outLine
 
 
   lazy private val function = ((doubleDollar ~> identifier) <~ openBracket) ~ repsep(identifier, comma) <~ closeBracket ^^ {
@@ -46,6 +46,8 @@ object ChecklistParser extends TokenParsers with ImplicitConversions with Packra
       Declaration(name, expression)
   }
   lazy private val whileStatement = lessMore ~> (expression withFailureMessage "Expected condition") ^^ WhileStatement
+  lazy private val section = hash ~> (outLine withFailureMessage "Section name expected") ^^ Section
+
 
   lazy private val tip = expressionCall ^^ {
     e =>
@@ -105,7 +107,8 @@ object ChecklistParser extends TokenParsers with ImplicitConversions with Packra
   lazy private val doubleFloor = accept("^^", { case lexical.DoubleFloor() => "^^" })
   lazy private val questionMark = accept("?", { case lexical.QuestionMark() => "?" })
   lazy private val dog = accept("@", { case lexical.Dog() => "@" })
-  lazy private val lessMore = accept("@", { case lexical.LessMore() => "<>" })
+  lazy private val hash = accept("#", { case lexical.Hash() => "#" })
+  lazy private val lessMore = accept("<>", { case lexical.LessMore() => "<>" })
   lazy private val doubleDog = accept("@@", { case lexical.DoubleDog() => "@@" })
   lazy private val bool = accept("true or false", { case v: lexical.LogicValue => v.value }) ^^ ExpressionBoolean
   lazy private val variableType = accept("Variable type", { case lexical.VariableTypeDeclaration(v) => v })

@@ -31,10 +31,11 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
       try {
         wrap.line match {
           case OutLine(participants) =>
-            println("-> " + evaluateLine(participants, globalVariables.toMap, globalFunctions.toList))
+            Printer.print("-> " + evaluateLine(participants, globalVariables.toMap, globalFunctions.toList))
+            Printer.print("\n")
           case e: VariableBlock =>
             val evaluatedTip = evaluateLine(e.tip.participants, globalVariables.toMap, globalFunctions.toList)
-            print(evaluatedTip + ": ")
+            Printer.print(evaluatedTip + ": ")
             val variable = getVariable(e.varType)
             evaluate(e.instructions.get, mutable.HashMap((e.name, variable)), new ListBuffer[ChecklistFunction])
           case f: ChecklistFunction =>
@@ -47,7 +48,7 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
               sys.error(s"Already defined variable $name")
             }
             val evaluatedTip = evaluateLine(tip.participants, globalVariables.toMap, globalFunctions.toList)
-            print(evaluatedTip + ": ")
+            Printer.print(evaluatedTip + ": ")
             val variable = getVariable(varType)
             globalVariables += ((name, variable))
           case ReturnExpression(expression) =>
@@ -95,6 +96,14 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
               globalVariables(variable) = evaluated.get
 
             }
+          case s: Section =>
+            Printer.pushSection(evaluateLine(s.name.participants, globalVariables.toMap, globalFunctions.toList).trim)
+            evaluate(
+              s.instructions.get,
+              globalVariables,
+              globalFunctions
+            )
+            Printer.popSection()
           case w: WhileStatement =>
             var evaluated = evaluateExpression(
               w.expression,
@@ -127,8 +136,9 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
         }
       } catch {
         case e: Exception =>
-          throw new RuntimeException(s"Ошибка на строке ${wrap.number}", e)
-          //System.err.println(s"Ошибка на строке ${wrap.number}\n\t${e.getClass.getSimpleName}: ${e.getMessage}")
+          //throw new RuntimeException(s"Ошибка на строке ${wrap.number}", e)
+          System.err.println(s"Ошибка на строке ${wrap.number}\n\t${e.getClass.getSimpleName}: ${e.getMessage}")
+          System.exit(0)
           return
       }
     }
@@ -161,11 +171,12 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
           case OutLine(participants) =>
             val line = evaluateLine(participants, concatMaps(variables.toMap, globalVariables.toMap), concatLists(functions.toList, globalFunctions.toList))
             if (!line.isEmpty) {
-              println("-> " + line)
+              Printer.print("-> " + line)
+              Printer.print("\n")
             }
           case e: VariableBlock =>
             val evaluatedTip = evaluateLine(e.tip.participants, concatMaps(variables.toMap, globalVariables.toMap), concatLists(globalFunctions.toList, functions.toList))
-            print(evaluatedTip + ": ")
+            Printer.print(evaluatedTip + ": ")
             val variable = getVariable(e.varType)
             evaluate(e.instructions.get, mutable.HashMap((e.name, variable)), new ListBuffer[ChecklistFunction])
           case f: ChecklistFunction =>
@@ -178,7 +189,7 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
               sys.error(s"Already defined variable $name")
             }
             val evaluatedTip = evaluateLine(tip.participants, concatMaps(variables.toMap, globalVariables.toMap), concatLists(globalFunctions.toList, functions.toList))
-            print(evaluatedTip + ": ")
+            Printer.print(evaluatedTip + ": ")
             val variable = getVariable(varType)
             variables += ((name, variable))
           case ReturnExpression(expression) =>
@@ -250,8 +261,25 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
               variables(variable) = evaluated.get
 
             }
+          case s: Section =>
+            Printer.pushSection(evaluateLine(s.name.participants, concatMaps(variables.toMap, globalVariables.toMap), concatLists(globalFunctions.toList, functions.toList)).trim)
+            evaluate(
+              s.instructions.get,
+              {
+                val buffer = new mutable.HashMap[String, CompletedExpression]()
+                buffer ++= globalVariables
+                buffer ++= variables
+                buffer
+              },
+              {
+                val buffer = new ListBuffer[ChecklistFunction]()
+                buffer ++= globalFunctions
+                buffer ++= functions
+                buffer
+              })
+            Printer.popSection()
           case w: WhileStatement =>
-            val evaluated = evaluateExpression(
+            var evaluated = evaluateExpression(
               w.expression,
               concatMaps(variables.toMap, globalVariables.toMap),
               concatLists(functions.toList, globalFunctions.toList)
@@ -268,27 +296,28 @@ class ChecklistEvaluator(val data: DataRequester) extends MarkProcessors {
               case None => sys.error("Неожиданно пустое выражение")
             }
             ){
-              evaluate(
-                w.instructions.get,
-                {
-                  val buffer = new mutable.HashMap[String, CompletedExpression]()
-                  buffer ++= globalVariables
-                  buffer ++= variables
-                  buffer
-                },
-                {
-                  val buffer = new ListBuffer[ChecklistFunction]()
-                  buffer ++= globalFunctions
-                  buffer ++= functions
-                  buffer
-                })
+              val vars = variables.keySet.toSet
+              val funcs = functions.toList
+              evaluate(w.instructions.get, variables, functions)
+              evaluated = evaluateExpression(
+                w.expression,
+                concatMaps(variables.toMap, globalVariables.toMap),
+                concatLists(functions.toList, globalFunctions.toList)
+              )
+              functions.clear()
+              functions ++= funcs
+              val toDel = variables.keySet.diff(vars)
+              val before = variables.filterNot(toDel contains _._1).toList
+              variables.clear()
+              variables ++= before
             }
 
         }
       } catch {
         case e: Exception =>
-          throw new RuntimeException(s"Ошибка на строке ${wrap.number}", e)
-          //System.err.println(s"Ошибка на строке ${wrap.number}\n\t${e.getClass.getSimpleName}: ${e.getMessage}")
+          //throw new RuntimeException(s"Ошибка на строке ${wrap.number}", e)
+          System.err.println(s"Ошибка на строке ${wrap.number}\n\t${e.getClass.getSimpleName}: ${e.getMessage}")
+          System.exit(0)
           return None
       }
     }

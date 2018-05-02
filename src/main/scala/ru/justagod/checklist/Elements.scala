@@ -40,6 +40,7 @@ sealed class LineWithInstructions extends Line {
 }
 
 case class OutLine(participants: List[OutLineParticipant]) extends Line
+case class Section(name: OutLine) extends LineWithInstructions
 case class ReturnExpression(expression: Option[Expression]) extends Line
 case class Assignation(variable: String, expression: Expression) extends Line
 case class Declaration(variable: String, expression: Expression) extends Line

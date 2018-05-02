@@ -84,11 +84,14 @@ object Main {
     }
   }
 
+  private val emptyLine = "\\s+".r
   def readFileFully(path: Path): String = {
     val builder = new StringBuilder()
     Files.readAllLines(path).asScala.foreach({
       l =>
-        builder.append(l)
+        if (!emptyLine.pattern.matcher(l).matches()) {
+          builder.append(l)
+        }
         builder.append('\n')
     })
     builder.toString()

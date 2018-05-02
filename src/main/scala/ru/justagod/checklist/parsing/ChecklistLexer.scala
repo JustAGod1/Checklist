@@ -37,7 +37,7 @@ class ChecklistLexer extends Lexical with ChecklistTokens {
       pushStatus(ExpressionStatus)
       e
   }
-  private val root = lessMore | exclamationMark | percent | frontArrow | doubleDog | dog | doubleDollar | doubleFloor | questionMark | line
+  private val root = hash | lessMore | exclamationMark | percent | frontArrow | doubleDog | dog | doubleDollar | doubleFloor | questionMark | line
   private val variableBlock = variableType | colon | dollar | string
   private val expression = logicValue | identifier | number | mark | exclamationMark | openingBrace | closingBrace ^^ {
     e =>
@@ -67,6 +67,7 @@ class ChecklistLexer extends Lexical with ChecklistTokens {
     ExclamationMark()
   }
   lazy private val comment = '#' ~> '#' ~> rep(chrExcept('\n'))
+  lazy private val hash = '#' ^^^ Hash()
   lazy private val dog = '@' ^^ {
     _ =>
       pushStatus(ExpressionStatus)
@@ -108,9 +109,9 @@ class ChecklistLexer extends Lexical with ChecklistTokens {
       }
       )
   }
-  lazy private val number = rep1(digit) ~ opt('.' ~> rep1(digit)) ^^ {
-    case a ~ None => Number(a.mkString.toDouble)
-    case a ~ Some(frac) => Number((a.mkString + frac).toDouble)
+  lazy private val number =  opt(accept('+') | '-') ~ rep1(digit) ~ opt('.' ~> rep1(digit)) ^^ {
+    case m ~ a ~ None => Number((m.getOrElse("") + a.mkString).toDouble)
+    case m ~ a ~ Some(frac) => Number((m.getOrElse("") + a.mkString + frac).toDouble)
   }
 
   lazy private val doubleDollar = '$' ~ '$' ^^ {
