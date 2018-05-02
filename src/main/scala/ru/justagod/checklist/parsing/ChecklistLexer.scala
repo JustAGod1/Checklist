@@ -111,7 +111,8 @@ class ChecklistLexer extends Lexical with ChecklistTokens {
   }
   lazy private val number =  opt(accept('+') | '-') ~ rep1(digit) ~ opt('.' ~> rep1(digit)) ^^ {
     case m ~ a ~ None => Number((m.getOrElse("") + a.mkString).toDouble)
-    case m ~ a ~ Some(frac) => Number((m.getOrElse("") + a.mkString + frac).toDouble)
+    case m ~ a ~ Some(frac) =>
+      Number((m.getOrElse("").toString + a.mkString + '.' + frac.mkString).toDouble)
   }
 
   lazy private val doubleDollar = '$' ~ '$' ^^ {
